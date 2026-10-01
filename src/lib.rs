@@ -34,7 +34,7 @@ fn register_forward(context: &Context, names: &[&str], command: &'static str) {
         .collect::<Vec<_>>();
 
     let node = Command::new(
-        aliases,
+        &aliases,
         "Essentials-style command",
     )
     .execute(Forward(command));
@@ -67,16 +67,19 @@ impl Plugin for EssentialsPumpkin {
             &["gmc", "creative"],
             "gamemode creative {player}",
         );
+
         register_forward(
             &context,
             &["gms", "survival"],
             "gamemode survival {player}",
         );
+
         register_forward(
             &context,
             &["gma", "adventure"],
             "gamemode adventure {player}",
         );
+
         register_forward(
             &context,
             &["gmsp", "spectator"],
