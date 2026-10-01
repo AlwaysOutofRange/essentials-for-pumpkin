@@ -16,7 +16,10 @@ impl CommandHandler for Forward {
         _args: ConsumedArgs,
     ) -> Result<i32, CommandError> {
         let player_name = sender.get_name();
-        let command = self.0.replace("{player}", &player_name);
+
+        let command = self
+            .0
+            .replace("{player}", &player_name);
 
         server.execute_command(
             &command,
@@ -27,7 +30,11 @@ impl CommandHandler for Forward {
     }
 }
 
-fn register_forward(context: &Context, names: &[&str], command: &'static str) {
+fn register_forward(
+    context: &Context,
+    names: &[&str],
+    command: &'static str,
+) {
     let aliases = names
         .iter()
         .map(|s| (*s).to_string())
@@ -60,8 +67,15 @@ impl Plugin for EssentialsPumpkin {
         }
     }
 
-    fn on_load(&self, context: Context) -> pumpkin_plugin_api::Result<()> {
-        // Gamemode
+    fn on_load(
+        &self,
+        context: Context,
+    ) -> pumpkin_plugin_api::Result<()> {
+
+        // =========================
+        // GAMEMODE
+        // =========================
+
         register_forward(
             &context,
             &["gmc", "creative"],
@@ -86,27 +100,104 @@ impl Plugin for EssentialsPumpkin {
             "gamemode spectator {player}",
         );
 
-        // Time / weather
-        register_forward(&context, &["day"], "time set day");
-        register_forward(&context, &["night"], "time set night");
-        register_forward(&context, &["sun"], "weather clear");
-        register_forward(&context, &["rain"], "weather rain");
-        register_forward(&context, &["thunder"], "weather thunder");
+        // =========================
+        // TIME
+        // =========================
 
-        // Player utility aliases
-        register_forward(&context, &["kill", "suicide"], "kill {player}");
-        register_forward(&context, &["clear"], "clear {player}");
-        register_forward(&context, &["fly"], "fly {player}");
+        register_forward(
+            &context,
+            &["day"],
+            "time set day",
+        );
 
-        // Common Essentials aliases
-        register_forward(&context, &["tp"], "tp {player}");
-        register_forward(&context, &["spawn"], "spawn {player}");
-        register_forward(&context, &["help"], "help");
-        register_forward(&context, &["plugins"], "plugins");
-        register_forward(&context, &["rules"], "rules");
+        register_forward(
+            &context,
+            &["night"],
+            "time set night",
+        );
+
+        // =========================
+        // WEATHER
+        // =========================
+
+        register_forward(
+            &context,
+            &["sun"],
+            "weather clear",
+        );
+
+        register_forward(
+            &context,
+            &["rain"],
+            "weather rain",
+        );
+
+        register_forward(
+            &context,
+            &["thunder"],
+            "weather thunder",
+        );
+
+        // =========================
+        // PLAYER UTILITIES
+        // =========================
+
+        register_forward(
+            &context,
+            &["kill", "suicide"],
+            "kill {player}",
+        );
+
+        register_forward(
+            &context,
+            &["clear"],
+            "clear {player}",
+        );
+
+        register_forward(
+            &context,
+            &["fly"],
+            "fly {player}",
+        );
+
+        // =========================
+        // COMMON COMMAND ALIASES
+        // =========================
+
+        register_forward(
+            &context,
+            &["tp"],
+            "tp {player}",
+        );
+
+        register_forward(
+            &context,
+            &["spawn"],
+            "spawn {player}",
+        );
+
+        register_forward(
+            &context,
+            &["help"],
+            "help",
+        );
+
+        register_forward(
+            &context,
+            &["plugins"],
+            "plugins",
+        );
+
+        register_forward(
+            &context,
+            &["rules"],
+            "rules",
+        );
 
         Ok(())
     }
 }
 
-pumpkin_plugin_api::register_plugin!(EssentialsPumpkin);
+pumpkin_plugin_api::register_plugin!(
+    EssentialsPumpkin
+);
