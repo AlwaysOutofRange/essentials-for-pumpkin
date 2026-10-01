@@ -1,0 +1,14 @@
+[package]
+name = "essentials_pumpkin"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+pumpkin-plugin-api = { git = "https://github.com/Pumpkin-MC/Pumpkin", rev = "742beaf6f9f84fb99a04402434f6c6feb86667d1", package = "pumpkin-plugin-api" }
+
+[profile.release]
+opt-level = "s"
+lto = true
