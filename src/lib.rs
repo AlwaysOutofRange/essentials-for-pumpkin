@@ -178,7 +178,7 @@ fn reg(
     admin: bool,
     build: impl FnOnce(Command) -> Command,
 ) {
-    let node = format!("essentials.{key}");
+    let node = format!("essentials-pumpkin.{key}");
     let default = if admin {
         PermissionDefault::Op(PermissionLevel::Two)
     } else {
