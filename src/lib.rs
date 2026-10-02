@@ -12,10 +12,7 @@ mod state;
 mod teleport;
 mod util;
 
-use std::sync::{
-    Arc,
-    atomic::{AtomicBool, Ordering},
-};
+use std::sync::Arc;
 
 use pumpkin_plugin_api::{
     Context, Plugin, PluginMetadata, Result, Server,
@@ -61,14 +58,10 @@ impl Plugin for EssentialsPlugin {
 
         let context = Arc::new(context);
 
-        context.register_event_handler::<PlayerJoinEvent, _>(
-            CommandRegistrar {
-                context: Arc::clone(&context),
-                registered: AtomicBool::new(false),
-            },
-            EventPriority::Lowest,
-            false,
-        )?;
+        // Register commands immediately on load
+        register_commands(&context);
+        tracing::info!("essentials-pumpkin commands registered");
+
         context.register_event_handler::<PlayerJoinEvent, _>(JoinHandler, EventPriority::Normal, false)?;
         context.register_event_handler::<PlayerLeaveEvent, _>(LeaveHandler, EventPriority::Normal, false)?;
         context.register_event_handler::<PlayerTeleportEvent, _>(BackTracker, EventPriority::Lowest, false)?;
@@ -88,21 +81,6 @@ impl Plugin for EssentialsPlugin {
 register_plugin!(EssentialsPlugin);
 
 // ------------------------------------------------------------------ events
-
-struct CommandRegistrar {
-    context: Arc<Context>,
-    registered: AtomicBool,
-}
-
-impl EventHandler<PlayerJoinEvent> for CommandRegistrar {
-    fn handle(&self, _server: Server, ev: EventData<PlayerJoinEvent>) -> EventData<PlayerJoinEvent> {
-        if !self.registered.swap(true, Ordering::AcqRel) {
-            register_commands(&self.context);
-            tracing::info!("essentials-pumpkin commands registered");
-        }
-        ev
-    }
-}
 
 struct JoinHandler;
 impl EventHandler<PlayerJoinEvent> for JoinHandler {
