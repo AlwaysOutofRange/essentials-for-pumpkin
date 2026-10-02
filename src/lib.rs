@@ -12,8 +12,6 @@ mod state;
 mod teleport;
 mod util;
 
-use std::sync::Arc;
-
 use pumpkin_plugin_api::{
     Context, Plugin, PluginMetadata, Result, Server,
     command::{Command, CommandNode},
@@ -24,7 +22,6 @@ use pumpkin_plugin_api::{
     permission::{Permission, PermissionDefault, PermissionLevel},
     permissions::{FS_READ_DATA, FS_WRITE_DATA},
     register_plugin,
-    scheduler::SchedulerExt,
 };
 
 use economy::EcoOp;
@@ -57,22 +54,13 @@ impl Plugin for EssentialsPlugin {
             st.load();
         });
 
-        // Pumpkin 0.2.0 has an upstream Wasm resource-lifetime bug when
-        // commands are registered synchronously from on_load. Defer command
-        // registration until the next server tick so on_load can return cleanly.
+        register_commands(&context);
 
         context.register_event_handler::<PlayerJoinEvent, _>(JoinHandler, EventPriority::Normal, false)?;
         context.register_event_handler::<PlayerLeaveEvent, _>(LeaveHandler, EventPriority::Normal, false)?;
         context.register_event_handler::<PlayerTeleportEvent, _>(BackTracker, EventPriority::Lowest, false)?;
         // Blocking + high priority so a muted player's message can be cancelled.
         context.register_event_handler::<PlayerChatEvent, _>(MuteFilter, EventPriority::High, true)?;
-
-        let command_context = Arc::new(context);
-        let register_context = Arc::clone(&command_context);
-        command_context.schedule_delayed_task(1, move |_server| {
-            register_commands(&register_context);
-            tracing::info!("essentials-pumpkin commands registered");
-        });
 
         tracing::info!("essentials-pumpkin loaded");
         Ok(())
