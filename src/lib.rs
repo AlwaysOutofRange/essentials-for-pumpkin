@@ -12,6 +12,8 @@ mod state;
 mod teleport;
 mod util;
 
+use std::sync::Arc;
+
 use pumpkin_plugin_api::{
     Context, Plugin, PluginMetadata, Result, Server,
     command::{Command, CommandNode},
@@ -22,6 +24,7 @@ use pumpkin_plugin_api::{
     permission::{Permission, PermissionDefault, PermissionLevel},
     permissions::{FS_READ_DATA, FS_WRITE_DATA},
     register_plugin,
+    scheduler::SchedulerExt,
 };
 
 use economy::EcoOp;
@@ -54,13 +57,22 @@ impl Plugin for EssentialsPlugin {
             st.load();
         });
 
-        register_commands(&context);
+        // Pumpkin 0.2.0 has an upstream Wasm resource-lifetime bug when
+        // commands are registered synchronously from on_load. Defer command
+        // registration until the next server tick so on_load can return cleanly.
 
         context.register_event_handler::<PlayerJoinEvent, _>(JoinHandler, EventPriority::Normal, false)?;
         context.register_event_handler::<PlayerLeaveEvent, _>(LeaveHandler, EventPriority::Normal, false)?;
         context.register_event_handler::<PlayerTeleportEvent, _>(BackTracker, EventPriority::Lowest, false)?;
         // Blocking + high priority so a muted player's message can be cancelled.
         context.register_event_handler::<PlayerChatEvent, _>(MuteFilter, EventPriority::High, true)?;
+
+        let command_context = Arc::new(context);
+        let register_context = Arc::clone(&command_context);
+        command_context.schedule_delayed_task(1, move |_server| {
+            register_commands(&register_context);
+            tracing::info!("essentials-pumpkin commands registered");
+        });
 
         tracing::info!("essentials-pumpkin loaded");
         Ok(())
@@ -126,6 +138,7 @@ impl EventHandler<PlayerLeaveEvent> for LeaveHandler {
             st.pd(&id, &name).last_seen = now();
             st.afk.remove(&id);
             st.tpa.remove(&id);
+            st.tpa.retain(|target, req| target != &id && req.from != id);
             st.save();
         });
         ev
@@ -289,14 +302,14 @@ fn register_commands(ctx: &Context) {
 
     // ---- chat & info -----------------------------------------------------
     // Vanilla owns /msg, /tell, /w and /me, so they are exposed under Essentials' other aliases.
-    reg(ctx, "msg", &["emsg", "m", "t", "pm", "epm", "etell", "whisper", "ewhisper"],
+    reg(ctx, "emsg", &["m", "t", "pm", "epm", "etell", "whisper", "ewhisper"],
         "Send a private message.", false, |c| {
         c.then(players_node("target").then(msg_node("message").execute(h(|s, _, a| social::msg(s, a)))))
     });
     reg(ctx, "r", &["r", "er", "reply", "ereply"], "Reply to the last message.", false, |c| {
         c.then(msg_node("message").execute(h(|s, sv, a| social::reply(s, sv, a))))
     });
-    reg(ctx, "me", &["eme", "action", "eaction", "describe", "edescribe"],
+    reg(ctx, "eme", &["action", "eaction", "describe", "edescribe"],
         "Describe an action in chat.", false, |c| {
         c.then(msg_node("action").execute(h(|s, sv, a| social::action(s, sv, a))))
     });
@@ -321,7 +334,7 @@ fn register_commands(ctx: &Context) {
     reg(ctx, "rules", &["rules", "erules"], "Show the server rules.", false, |c| {
         c.execute(h(|s, _, _| social::rules(s)))
     });
-    reg(ctx, "list", &["elist", "online", "eonline", "playerlist", "eplayerlist", "plist", "eplist", "who", "ewho"],
+    reg(ctx, "elist", &["online", "eonline", "playerlist", "eplayerlist", "plist", "eplist", "who", "ewho"],
         "List online players.", false, |c| {
         c.execute(h(|s, sv, _| social::list(s, sv)))
     });
