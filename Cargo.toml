@@ -1,0 +1,23 @@
+[package]
+name = "essentials-pumpkin"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.96"
+description = "A Pumpkin (Rust Minecraft server) port of the most-used EssentialsX features"
+license = "GPL-3.0-or-later"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+# Pinned to the Pumpkin revision this port was written against.
+pumpkin-plugin-api = { git = "https://github.com/Pumpkin-MC/Pumpkin.git", rev = "1859221" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tracing = "0.1"
+
+[profile.release]
+opt-level = "s"
+lto = true
+strip = true
+codegen-units = 1
